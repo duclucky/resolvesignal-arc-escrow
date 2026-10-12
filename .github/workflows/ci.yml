@@ -26,6 +26,20 @@ jobs:
       - name: Lint pipeline and workflow
         run: ruff check resolvesignal_pipeline python_tests examples scripts
 
+  integration-kit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install standalone kit
+        run: python -m pip install -e "toolkits/python[dev]"
+      - name: Offline client tests
+        run: python -m pytest toolkits/python/tests -q
+      - name: Build versioned kit and verify source hashes
+        run: python scripts/build_integration_kit.py --output /tmp/resolvesignal-kit
+
   contracts:
     runs-on: ubuntu-latest
     steps:

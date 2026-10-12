@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools==75.8.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "resolvesignal-integration"
+version = "0.1.1"
+description = "Reference client for the ResolveSignal hosted decision API"
+readme = "README.md"
+license = {file = "LICENSE"}
+requires-python = ">=3.12"
+dependencies = ["httpx==0.28.1", "jsonschema==4.25.1"]
+
+[project.urls]
+Source = "https://github.com/duclucky/resolvesignal-decision-pipeline/tree/main/toolkits/python"
+Documentation = "https://resolvesignal.com/integration/developer.md"
+
+[project.optional-dependencies]
+dev = ["pytest==9.1.1"]
+
+[project.scripts]
+resolvesignal = "resolvesignal_integration.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["resolvesignal_integration*"]
+
+[tool.setuptools.package-data]
+resolvesignal_integration = ["schemas/*.json"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

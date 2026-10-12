@@ -1,0 +1,611 @@
+{
+  "$defs": {
+    "Absent": {
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "const": "none",
+          "title": "Status",
+          "type": "string"
+        },
+        "explanation": {
+          "maxLength": 6000,
+          "minLength": 1,
+          "title": "Explanation",
+          "type": "string"
+        }
+      },
+      "required": [
+        "status",
+        "explanation"
+      ],
+      "title": "Absent",
+      "type": "object"
+    },
+    "Action": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "description": {
+          "maxLength": 6000,
+          "minLength": 1,
+          "title": "Description",
+          "type": "string"
+        },
+        "effect": {
+          "description": "Effect of the declared operation: read_only observes without changing business state; state_change writes/acts (including mixed read/write); unknown cannot be selected by the automated service. Not a desired outcome or execution permission.",
+          "enum": [
+            "read_only",
+            "state_change",
+            "unknown"
+          ],
+          "title": "Effect",
+          "type": "string"
+        },
+        "requires_approval": {
+          "title": "Requires Approval",
+          "type": "boolean"
+        },
+        "arguments": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/ActionArgument"
+              },
+              "maxItems": 20,
+              "minItems": 1,
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/Absent"
+            }
+          ],
+          "title": "Arguments"
+        },
+        "response_observations": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/ResponseObservation"
+              },
+              "maxItems": 20,
+              "minItems": 1,
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/Absent"
+            }
+          ],
+          "title": "Response Observations"
+        },
+        "target_id": {
+          "maxLength": 6000,
+          "minLength": 1,
+          "title": "Target Id",
+          "type": "string"
+        },
+        "cost_fact_id": {
+          "anyOf": [
+            {
+              "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Cost Fact Id"
+        }
+      },
+      "required": [
+        "id",
+        "description",
+        "effect",
+        "requires_approval",
+        "arguments",
+        "response_observations",
+        "target_id",
+        "cost_fact_id"
+      ],
+      "title": "Action",
+      "type": "object"
+    },
+    "ActionArgument": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$",
+          "title": "Name",
+          "type": "string"
+        },
+        "value": {
+          "maxLength": 1000,
+          "minLength": 1,
+          "title": "Value",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "value"
+      ],
+      "title": "ActionArgument",
+      "type": "object"
+    },
+    "Answer": {
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "enum": [
+            "provided",
+            "none",
+            "unknown"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "content": {
+          "description": "A real answer, or an explicit explanation such as 'Không có. ...'. Never blank.",
+          "maxLength": 6000,
+          "minLength": 1,
+          "title": "Content",
+          "type": "string"
+        }
+      },
+      "required": [
+        "status",
+        "content"
+      ],
+      "title": "Answer",
+      "type": "object"
+    },
+    "Condition": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "observation_id": {
+          "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$",
+          "title": "Observation Id",
+          "type": "string"
+        },
+        "operator": {
+          "enum": [
+            "eq",
+            "ne",
+            "gt",
+            "gte",
+            "lt",
+            "lte",
+            "exists"
+          ],
+          "title": "Operator",
+          "type": "string"
+        },
+        "expected": {
+          "$ref": "#/$defs/JsonValue"
+        },
+        "action_ids": {
+          "items": {
+            "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$",
+            "type": "string"
+          },
+          "title": "Action Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "observation_id",
+        "operator",
+        "expected",
+        "action_ids"
+      ],
+      "title": "Condition",
+      "type": "object"
+    },
+    "Fact": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "value": {
+          "pattern": "^-?\\d{1,18}(\\.\\d{1,12})?$",
+          "title": "Value",
+          "type": "string"
+        },
+        "unit": {
+          "maxLength": 32,
+          "minLength": 1,
+          "title": "Unit",
+          "type": "string"
+        },
+        "source": {
+          "maxLength": 6000,
+          "minLength": 1,
+          "title": "Source",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "value",
+        "unit",
+        "source"
+      ],
+      "title": "Fact",
+      "type": "object"
+    },
+    "JsonValue": {},
+    "Objective": {
+      "additionalProperties": false,
+      "properties": {
+        "target_id": {
+          "maxLength": 6000,
+          "minLength": 1,
+          "title": "Target Id",
+          "type": "string"
+        },
+        "statement": {
+          "maxLength": 6000,
+          "minLength": 1,
+          "title": "Statement",
+          "type": "string"
+        },
+        "success_contract": {
+          "$ref": "#/$defs/SuccessContract"
+        }
+      },
+      "required": [
+        "target_id",
+        "statement",
+        "success_contract"
+      ],
+      "title": "Objective",
+      "type": "object"
+    },
+    "Observation": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "target_id": {
+          "maxLength": 6000,
+          "minLength": 1,
+          "title": "Target Id",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "provided",
+            "none",
+            "unknown"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "value": {
+          "$ref": "#/$defs/JsonValue"
+        },
+        "explanation": {
+          "maxLength": 6000,
+          "minLength": 1,
+          "title": "Explanation",
+          "type": "string"
+        },
+        "source": {
+          "maxLength": 6000,
+          "minLength": 1,
+          "title": "Source",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "target_id",
+        "status",
+        "value",
+        "explanation",
+        "source"
+      ],
+      "title": "Observation",
+      "type": "object"
+    },
+    "Policy": {
+      "additionalProperties": false,
+      "properties": {
+        "authority": {
+          "$ref": "#/$defs/Answer"
+        },
+        "constraints": {
+          "$ref": "#/$defs/Answer"
+        },
+        "allowed_action_ids": {
+          "items": {
+            "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$",
+            "type": "string"
+          },
+          "title": "Allowed Action Ids",
+          "type": "array"
+        },
+        "forbidden_action_ids": {
+          "items": {
+            "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$",
+            "type": "string"
+          },
+          "title": "Forbidden Action Ids",
+          "type": "array"
+        },
+        "conditions": {
+          "items": {
+            "$ref": "#/$defs/Condition"
+          },
+          "title": "Conditions",
+          "type": "array"
+        }
+      },
+      "required": [
+        "authority",
+        "constraints",
+        "allowed_action_ids",
+        "forbidden_action_ids",
+        "conditions"
+      ],
+      "title": "Policy",
+      "type": "object"
+    },
+    "ResponseCase": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "description": {
+          "maxLength": 6000,
+          "minLength": 1,
+          "title": "Description",
+          "type": "string"
+        },
+        "evidence": {
+          "enum": [
+            "usable",
+            "authoritative_absence",
+            "unavailable"
+          ],
+          "title": "Evidence",
+          "type": "string"
+        },
+        "target": {
+          "enum": [
+            "matched",
+            "mismatched",
+            "unverified"
+          ],
+          "title": "Target",
+          "type": "string"
+        },
+        "finality": {
+          "enum": [
+            "final",
+            "non_final",
+            "unknown"
+          ],
+          "title": "Finality",
+          "type": "string"
+        },
+        "operation_completed": {
+          "description": "Whether this response proves the selected operation actually completed. A usable pending record may finish a read; a pending write/ACK does not finish a state change.",
+          "title": "Operation Completed",
+          "type": "boolean"
+        },
+        "satisfies": {
+          "items": {
+            "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$",
+            "type": "string"
+          },
+          "title": "Satisfies",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "description",
+        "evidence",
+        "target",
+        "finality",
+        "operation_completed",
+        "satisfies"
+      ],
+      "title": "ResponseCase",
+      "type": "object"
+    },
+    "ResponseObservation": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "description": "Caller-defined observation metadata ID, not a guaranteed vendor response field name.",
+          "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "acknowledgement",
+            "action_completion",
+            "problem_state"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "description": {
+          "maxLength": 6000,
+          "minLength": 1,
+          "title": "Description",
+          "type": "string"
+        },
+        "cases": {
+          "items": {
+            "$ref": "#/$defs/ResponseCase"
+          },
+          "minItems": 1,
+          "title": "Cases",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "description",
+        "cases"
+      ],
+      "title": "ResponseObservation",
+      "type": "object"
+    },
+    "SuccessContract": {
+      "additionalProperties": false,
+      "properties": {
+        "requires_final_state": {
+          "description": "Explicitly choose whether the goal requires a definitive final business state. Pending cannot satisfy a true declaration.",
+          "title": "Requires Final State",
+          "type": "boolean"
+        },
+        "criteria": {
+          "items": {
+            "$ref": "#/$defs/SuccessCriterion"
+          },
+          "minItems": 1,
+          "title": "Criteria",
+          "type": "array"
+        }
+      },
+      "required": [
+        "requires_final_state",
+        "criteria"
+      ],
+      "title": "SuccessContract",
+      "type": "object"
+    },
+    "SuccessCriterion": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "description": {
+          "minLength": 1,
+          "title": "Description",
+          "type": "string"
+        },
+        "allow_authoritative_absence": {
+          "description": "True only if an explicit definitive negative lookup can satisfy THIS criterion. Missing/unavailable data never satisfies it.",
+          "title": "Allow Authoritative Absence",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "description",
+        "allow_authoritative_absence"
+      ],
+      "title": "SuccessCriterion",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "objective": {
+      "$ref": "#/$defs/Objective"
+    },
+    "current_state": {
+      "$ref": "#/$defs/Answer"
+    },
+    "observations": {
+      "items": {
+        "$ref": "#/$defs/Observation"
+      },
+      "minItems": 1,
+      "title": "Observations",
+      "type": "array"
+    },
+    "policy": {
+      "$ref": "#/$defs/Policy"
+    },
+    "capabilities": {
+      "anyOf": [
+        {
+          "items": {
+            "$ref": "#/$defs/Action"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        {
+          "$ref": "#/$defs/Absent"
+        }
+      ],
+      "title": "Capabilities"
+    },
+    "facts": {
+      "anyOf": [
+        {
+          "items": {
+            "$ref": "#/$defs/Fact"
+          },
+          "minItems": 1,
+          "type": "array"
+        },
+        {
+          "$ref": "#/$defs/Absent"
+        }
+      ],
+      "title": "Facts"
+    },
+    "previous_attempts": {
+      "$ref": "#/$defs/Answer"
+    },
+    "observed_at": {
+      "format": "date-time",
+      "title": "Observed At",
+      "type": "string"
+    },
+    "locale": {
+      "enum": [
+        "vi",
+        "en"
+      ],
+      "title": "Locale",
+      "type": "string"
+    }
+  },
+  "required": [
+    "objective",
+    "current_state",
+    "observations",
+    "policy",
+    "capabilities",
+    "facts",
+    "previous_attempts",
+    "observed_at",
+    "locale"
+  ],
+  "title": "Request",
+  "type": "object",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

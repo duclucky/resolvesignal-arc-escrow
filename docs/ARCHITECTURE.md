@@ -19,8 +19,13 @@ an earlier stage.
    to SHA-256 hashes of the exact sources used during review.
 8. **Renderer** revalidates those bindings and constructs the result without
    using model-authored executable prose.
-9. **Workflow** coordinates idempotency, per-call locks, bounded parallel work,
-   response delivery, terminal settlement, and context deletion.
+9. **Reference workflow** coordinates in-memory idempotency, per-call locks,
+   bounded parallel work, delivery, terminal settlement, and context cleanup
+   in one process. It trusts adapter confirmation and loses its state on restart.
+
+The hosted service has a separate runtime. This repository's core and client
+can be used independently; they are not a complete production server. See
+[integration options](INTEGRATION.md) and [recovery boundaries](PAYMENT-LIFECYCLE.md).
 
 ## Important invariants
 

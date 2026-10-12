@@ -2,6 +2,7 @@
 
 import asyncio
 import hashlib
+import json
 import uuid
 from dataclasses import dataclass, field
 from typing import Any, Literal, Protocol
@@ -22,6 +23,12 @@ class PaymentQuote:
 
 
 class PaymentAdapter(Protocol):
+    """Return only authoritatively confirmed, bound financial outcomes.
+
+    Broadcast hashes and HTTP acknowledgements are not confirmations. Adapters
+    must reconcile unknown outcomes using the same financial identity; this
+    reference workflow does not implement durable recovery or receipt validation.
+    """
     async def quote(self, *, call_id: str, payer: str, input_sha256: str) -> PaymentQuote: ...
     async def verify(self, quote: PaymentQuote, proof: Any) -> dict: ...
     async def complete(self, quote: PaymentQuote, result_sha256: str) -> dict: ...
@@ -85,11 +92,13 @@ class Delivery:
 
 
 class ResolveSignalWorkflow:
-    """Stateless-after-terminal reference implementation.
+    """In-memory, single-process reference implementation.
 
     `submit` runs all free gates and returns a quote. `pay_and_process` verifies one
     payment and returns one checked result. Settlement occurs only after the caller
     confirms delivery; any paid quality or delivery failure follows the refund path.
+    Keys bind canonical payload bytes and payer for this instance's lifetime only.
+    A production service requires durable intent storage and chain reconciliation.
     """
 
     def __init__(
@@ -109,41 +118,55 @@ class ResolveSignalWorkflow:
         self.processing_timeout_seconds = processing_timeout_seconds
         self._compute_slots = asyncio.Semaphore(max_concurrency)
         self._index_lock = asyncio.Lock()
-        self._submissions: dict[str, tuple[str, asyncio.Task]] = {}
-        self._idempotency: dict[str, str] = {}
+        self._submissions: dict[str, tuple[str, str, asyncio.Task]] = {}
+        self._idempotency: dict[str, tuple[str, str, str]] = {}
         self._orders: dict[str, _Order] = {}
         self._receipts: dict[str, TerminalReceipt] = {}
 
     async def submit(self, payload: dict, *, payer: str, request_key: str) -> OrderView:
         if not payer.strip() or not request_key.strip():
             raise WorkflowError("payer_and_request_key_required")
+        serialized = canonical(payload)
+        payload_hash = hashlib.sha256(serialized.encode("utf-8")).hexdigest()
+        # Freeze the caller's input before the first asynchronous boundary.
+        snapshot = json.loads(serialized)
         async with self._index_lock:
-            prior_id = self._idempotency.get(request_key)
-            if prior_id:
+            binding = self._idempotency.get(request_key)
+            if binding:
+                prior_payer, prior_hash, prior_id = binding
+                self._check_binding(prior_payer, prior_hash, payer, payload_hash)
                 prior = self._orders.get(prior_id)
                 if prior is None:
                     raise WorkflowError("request_already_terminal", call_id=prior_id)
-                if prior.payer != payer:
-                    raise WorkflowError("idempotency_payer_mismatch")
                 return OrderView(prior.call_id, prior.status, prior.quote)
             pending = self._submissions.get(request_key)
             if pending:
-                if pending[0] != payer:
-                    raise WorkflowError("idempotency_payer_mismatch")
-                task = pending[1]
+                self._check_binding(pending[0], pending[1], payer, payload_hash)
+                task = pending[2]
             else:
-                task = asyncio.create_task(self._submit_new(payload, payer=payer, request_key=request_key))
-                self._submissions[request_key] = (payer, task)
+                task = asyncio.create_task(self._submit_new(
+                    snapshot, payer=payer, request_key=request_key, payload_hash=payload_hash,
+                ))
+                self._submissions[request_key] = (payer, payload_hash, task)
         try:
             return await asyncio.shield(task)
         finally:
             if task.done():
                 async with self._index_lock:
                     current = self._submissions.get(request_key)
-                    if current and current[1] is task:
+                    if current and current[2] is task:
                         self._submissions.pop(request_key, None)
 
-    async def _submit_new(self, payload: dict, *, payer: str, request_key: str) -> OrderView:
+    @staticmethod
+    def _check_binding(prior_payer: str, prior_hash: str, payer: str, payload_hash: str):
+        if prior_payer != payer:
+            raise WorkflowError("idempotency_payer_mismatch")
+        if prior_hash != payload_hash:
+            raise WorkflowError("idempotency_payload_mismatch")
+
+    async def _submit_new(
+        self, payload: dict, *, payer: str, request_key: str, payload_hash: str,
+    ) -> OrderView:
         prepared = await self.pipeline.prepare(payload)
         call_id = "call_" + uuid.uuid4().hex
         quote = await self.payment.quote(
@@ -156,7 +179,7 @@ class ResolveSignalWorkflow:
         order = _Order(call_id, request_key, payer, prepared, quote)
         async with self._index_lock:
             self._orders[call_id] = order
-            self._idempotency[request_key] = call_id
+            self._idempotency[request_key] = (payer, payload_hash, call_id)
         return OrderView(call_id, order.status, quote)
 
     async def pay_and_process(self, call_id: str, *, payment_proof: Any) -> Delivery:

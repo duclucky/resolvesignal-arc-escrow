@@ -9,7 +9,8 @@
 - Semantic review covers exactly four required claims and is bound to source
   hashes owned by trusted code.
 - Invalid paid output is withheld and routed to refund.
-- One idempotency key and payer map to one call.
+- One idempotency key binds payer and canonical input hash to one call within
+  a single reference workflow instance. Changed content/payer is rejected.
 - Concurrent calls retain separate contexts, results, and payment recipients.
 - A terminal receipt contains no input or result body.
 - Onchain completion transfers only the exact fee to treasury; refund and
@@ -33,6 +34,11 @@ payments, surplus, blocked recipients, and multi-vault conservation.
   execution of the returned action.
 - Circle/USDC issuer controls, the Arc network, RPCs, facilitators, and managed
   signer services remain external dependencies.
+- The reference workflow trusts adapter receipts. Adapters must verify final
+  chain outcomes; a broadcast hash or RPC timeout is not settlement evidence.
+- Reference keys, locks and receipts are process-local. Durable recovery and
+  coordination across workers are deployment responsibilities, not guarantees
+  supplied by this implementation.
 
 ## Out of scope
 

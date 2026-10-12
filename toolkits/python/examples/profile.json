@@ -1,0 +1,86 @@
+{
+  "objective": {
+    "target_id": "ORDER-123",
+    "statement": "Establish the authoritative final delivery outcome for ORDER-123 before any duplicate order is considered. Pending or unavailable evidence does not resolve this goal.",
+    "success_contract": {
+      "requires_final_state": true,
+      "criteria": [
+        {
+          "id": "goal",
+          "description": "An authoritative matching record establishes whether delivery of ORDER-123 definitively succeeded or failed.",
+          "allow_authoritative_absence": false
+        }
+      ]
+    }
+  },
+  "policy": {
+    "authority": {
+      "status": "provided",
+      "content": "The caller can read delivery status. Any additional order needs human approval."
+    },
+    "constraints": {
+      "status": "provided",
+      "content": "Do not submit another order until the first outcome is confirmed."
+    },
+    "allowed_action_ids": [
+      "check_status"
+    ],
+    "forbidden_action_ids": [],
+    "conditions": []
+  },
+  "capabilities": [
+    {
+      "id": "check_status",
+      "description": "Read vendor delivery status using order reference ORDER-123",
+      "effect": "read_only",
+      "requires_approval": false,
+      "arguments": [
+        {
+          "name": "order_ref",
+          "value": "ORDER-123"
+        }
+      ],
+      "response_observations": [
+        {
+          "id": "delivery_outcome",
+          "kind": "problem_state",
+          "description": "Delivery status returned by the vendor for the supplied order; may be pending or inconclusive.",
+          "cases": [
+            {
+              "id": "conclusive",
+              "description": "An authoritative usable record for ORDER-123 explicitly confirms final successful or failed delivery.",
+              "evidence": "usable",
+              "target": "matched",
+              "finality": "final",
+              "satisfies": [
+                "goal"
+              ],
+              "operation_completed": true
+            },
+            {
+              "id": "pending",
+              "description": "Matching usable record with a non-final business state.",
+              "evidence": "usable",
+              "target": "matched",
+              "finality": "non_final",
+              "satisfies": [],
+              "operation_completed": true
+            },
+            {
+              "id": "missing",
+              "description": "No usable record or definitive negative lookup result.",
+              "evidence": "unavailable",
+              "target": "unverified",
+              "finality": "unknown",
+              "satisfies": [],
+              "operation_completed": false
+            }
+          ]
+        }
+      ],
+      "target_id": "ORDER-123",
+      "cost_fact_id": null
+    }
+  ],
+  "locale": "en"
+}

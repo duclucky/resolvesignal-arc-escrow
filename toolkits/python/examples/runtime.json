@@ -1,0 +1,25 @@
+{
+  "current_state": {
+    "status": "provided",
+    "content": "The original POST timed out; delivery status is unknown. Order reference is ORDER-123."
+  },
+  "observations": [
+    {
+      "id": "client_timeout",
+      "target_id": "ORDER-123",
+      "status": "provided",
+      "value": "HTTP timeout after 30 seconds",
+      "explanation": "No final response received; actual delivery state is unknown.",
+      "source": "Synthetic client log for ORDER-123"
+    }
+  ],
+  "facts": {
+    "status": "none",
+    "explanation": "No numeric facts are needed for this diagnostic request."
+  },
+  "previous_attempts": {
+    "status": "provided",
+    "content": "One delivery attempt. No retries and no subsequent status check."
+  },
+  "observed_at": "2026-10-04T00:00:00Z"
+}

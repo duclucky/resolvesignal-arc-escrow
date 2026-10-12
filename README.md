@@ -9,7 +9,9 @@ agents. A caller submits current evidence, an explicit goal, authority,
 constraints, and executable capabilities. The pipeline returns exactly one
 typed conditional next action, or fails the service and takes the refund path.
 
-This repository contains the complete reusable workflow behind the product:
+This repository contains the reusable decision core, an **in-memory reference
+workflow**, and Arc escrow contracts. The hosted service has a separate runtime;
+this checkout is not its complete production deployment. The reference demonstrates:
 
 1. publish a machine-readable form;
 2. reject blank, incomplete, stale, contradictory, or unbound input;
@@ -98,6 +100,8 @@ sequenceDiagram
 | `src/` | Arc x402 per-call escrow contracts |
 | `abi/` and `deployments/` | Public contract interfaces and Arc Mainnet manifest |
 | `python_tests/` and `test/` | Pipeline, workflow, Solidity, fuzz, regression, and invariant coverage |
+| `toolkits/python/` | MIT hosted-API client, schemas, English offline examples and client tests |
+| `scripts/build_integration_kit.py` | Reproducible versioned client ZIP and SHA-256 checksums |
 
 ## Run the decision core
 
@@ -149,6 +153,25 @@ Use `ResolveSignalWorkflow` when you also need quote, payment, delivery,
 completion/refund, idempotency, concurrency, and terminal cleanup. Its
 `PaymentAdapter` interface keeps the decision system independent of wallet or
 facilitator custody.
+
+The workflow's keys and receipts live only in one process. Restarting it loses
+them. It supplies no durable journal, multi-worker coordination, chain receipt
+validator, or production payment adapter. Implement these boundaries before
+using it to operate a paid service; see [payment lifecycle](docs/PAYMENT-LIFECYCLE.md).
+
+## Choose your toolkit
+
+- **Call the hosted API:** install the MIT [Python Integration Kit](toolkits/python/README.md)
+  for request building, Circle CLI payment and recovery. No caller-side LLM is required.
+- **Embed the decision core:** use `resolvesignal_pipeline` with your own model
+  credentials and deployment. This does not call the hosted ResolveSignal API.
+- **Coordinate agent budgets:** [Agent Commitments](https://github.com/duclucky/agent-commitments)
+  is a separate alpha toolkit. Its direct x402 integration is pending.
+
+[Toolkits](https://resolvesignal.com/toolkits) lists availability. Agent Starter
+is planned, not a downloadable agent. Wallet custody and spending limits remain
+with Circle Agent Wallet and Arc Portal. See [integration](docs/INTEGRATION.md)
+for the payer-control challenge and current hosted contract.
 
 ## Input contract
 

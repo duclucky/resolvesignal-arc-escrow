@@ -1,4 +1,5 @@
 import asyncio
+from copy import deepcopy
 
 import pytest
 from test_pipeline import FakeGPT, FakeJev
@@ -48,6 +49,97 @@ class SlowGPT(FakeGPT):
     async def plan(self, contract):
         await asyncio.sleep(0.05)
         return await super().plan(contract)
+
+
+class BlockingPayment(FakePayment):
+    def __init__(self):
+        super().__init__()
+        self.started = asyncio.Event()
+        self.release = asyncio.Event()
+
+    async def quote(self, **kwargs):
+        self.started.set()
+        await self.release.wait()
+        return await super().quote(**kwargs)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("phase", ["pending", "quoted", "terminal"])
+async def test_key_rejects_changed_payload_at_every_phase(request_payload, phase):
+    payment = BlockingPayment()
+    workflow = ResolveSignalWorkflow(
+        pipeline=DecisionPipeline(jev=FakeJev(), gpt=FakeGPT()), payment=payment,
+    )
+    first = asyncio.create_task(
+        workflow.submit(request_payload, payer="0xbuyer", request_key="bound-key")
+    )
+    await payment.started.wait()
+    if phase != "pending":
+        payment.release.set()
+        order = await first
+        if phase == "terminal":
+            delivery = await workflow.pay_and_process(order.call_id, payment_proof={})
+            await delivery.acknowledge()
+    changed = deepcopy(request_payload)
+    changed["current_state"]["content"] = "Different invoice evidence."
+    try:
+        with pytest.raises(WorkflowError) as caught:
+            await asyncio.wait_for(
+                workflow.submit(changed, payer="0xbuyer", request_key="bound-key"),
+                timeout=0.2,
+            )
+        assert caught.value.code == "idempotency_payload_mismatch"
+    finally:
+        payment.release.set()
+        await first
+    assert len(payment.quoted) == 1
+
+
+@pytest.mark.asyncio
+async def test_reordered_keys_are_the_same_request(request_payload):
+    payment = FakePayment()
+    workflow = ResolveSignalWorkflow(
+        pipeline=DecisionPipeline(jev=FakeJev(), gpt=FakeGPT()), payment=payment,
+    )
+    order = await workflow.submit(request_payload, payer="0xbuyer", request_key="canonical-key")
+    reordered = dict(reversed(list(request_payload.items())))
+    replay = await workflow.submit(reordered, payer="0xbuyer", request_key="canonical-key")
+    assert replay.call_id == order.call_id
+    assert len(payment.quoted) == 1
+
+
+@pytest.mark.asyncio
+async def test_key_rejects_another_payer_after_terminal(request_payload):
+    payment = FakePayment()
+    workflow = ResolveSignalWorkflow(
+        pipeline=DecisionPipeline(jev=FakeJev(), gpt=FakeGPT()), payment=payment,
+    )
+    order = await workflow.submit(request_payload, payer="0xbuyer", request_key="payer-key")
+    delivery = await workflow.pay_and_process(order.call_id, payment_proof={})
+    await delivery.acknowledge()
+    with pytest.raises(WorkflowError, match="idempotency_payer_mismatch"):
+        await workflow.submit(request_payload, payer="0xother", request_key="payer-key")
+    assert len(payment.quoted) == 1
+
+
+@pytest.mark.asyncio
+async def test_unknown_settlement_is_not_recorded_as_terminal(request_payload):
+    class UnknownSettlement(FakePayment):
+        async def complete(self, quote, result_sha256):
+            raise TimeoutError("confirmation unavailable")
+
+    payment = UnknownSettlement()
+    workflow = ResolveSignalWorkflow(
+        pipeline=DecisionPipeline(jev=FakeJev(), gpt=FakeGPT()), payment=payment,
+    )
+    order = await workflow.submit(request_payload, payer="0xbuyer", request_key="unknown-key")
+    delivery = await workflow.pay_and_process(order.call_id, payment_proof={})
+    with pytest.raises(TimeoutError):
+        await delivery.acknowledge()
+    with pytest.raises(WorkflowError, match="receipt_not_found"):
+        workflow.receipt(order.call_id)
+    assert payment.refunded == []
+    assert workflow.has_sensitive_context(order.call_id)
 
 
 @pytest.mark.asyncio

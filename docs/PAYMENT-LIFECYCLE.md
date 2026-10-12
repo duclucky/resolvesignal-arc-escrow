@@ -20,9 +20,33 @@ deterministic vault per call and standard x402 v2 `exact` payment.
 
 ## Idempotency
 
-One request key maps to one call. Concurrent submissions using the same key and
-payer share the same in-flight quote. Reusing the key with another payer fails.
-A terminal key is not automatically reopened or charged again.
+Within one `ResolveSignalWorkflow` instance, a request key binds one payer and
+the SHA-256 of canonical submitted JSON. Object-key order does not change the
+binding. Changed content or payer fails, including during admission and after
+terminal cleanup. Identical concurrent submissions share the in-flight quote;
+a terminal key is not reopened. Only the hash survives business-context cleanup.
+
+This reference uses RAM, not persistent storage. A new instance or process has
+no knowledge of previous keys, receipts or financial attempts. It must not be
+used as a production guarantee against duplicate payment after restart.
+
+## Production adapter and recovery boundary
+
+`verify`, `complete` and `refund` must return only after authoritative confirmation
+of the bound outcome. A transaction hash, HTTP response or cached balance alone
+is insufficient. The reference trusts the adapter's returned dictionary; it
+does not validate chain receipts itself. A confirmation timeout is an unknown
+outcome, not a failed payment or completed refund.
+
+A production runtime must durably store request-key/payer/input-hash bindings
+and financial intent **before** broadcast, coordinate workers, and reconcile
+the same call and transaction after restart. Repeated adapter operations must
+reuse stable financial identities. Do not reopen a key, charge again or refund
+an already completed vault because an RPC response was lost. Reconcile the
+onchain vault state and transaction before another financial action.
+
+The hosted HTTP service is a separate implementation. These requirements and
+the reference tests do not prove its crash recovery or independent security review.
 
 ## Recovery
 
