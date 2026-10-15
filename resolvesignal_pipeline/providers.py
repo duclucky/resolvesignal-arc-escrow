@@ -45,7 +45,7 @@ class JevAdmissionClient:
             json={
                 "model": self.model,
                 "state": {
-                    "request": contract.request().model_dump(mode="json"),
+                    "request": contract.request().model_input(),
                     "candidate_ids": list(contract.candidate_ids),
                 },
                 "questions": {
@@ -92,7 +92,7 @@ class OpenAIDecisionClient:
             model=self.model,
             instructions=PLANNER_INSTRUCTIONS,
             input=canonical({
-                "request": contract.request().model_dump(mode="json"),
+                "request": contract.request().model_input(),
                 "candidate_ids": list(contract.candidate_ids),
             }),
             text_format=DecisionIR,

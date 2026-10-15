@@ -207,7 +207,7 @@ def claim_sources(draft: DecisionIR, request: Request, action: Action):
 def review_packet(contract: CompiledContract, draft: DecisionIR):
     request, action = check_ir(contract, draft)
     return {
-        "request": request.model_dump(mode="json"),
+        "request": request.model_input(),
         "decision_ir": draft.model_dump(mode="json"),
         "claims": {key: sorted(value) for key, value in claim_sources(draft, request, action).items()},
         "sources": semantic_sources(request, action),

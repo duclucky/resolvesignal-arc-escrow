@@ -47,6 +47,8 @@ def test_machine_form_exposes_complete_schema_and_failure_policy():
     required = set(form["request_schema"]["required"])
 
     assert {"objective", "current_state", "observations", "policy", "capabilities"} <= required
-    assert form["required_behavior"]["all_fields_required"] is True
+    assert form["required_behavior"]["all_fields_required"] is False
+    assert form["required_behavior"]["optional_fields"] == ["proposed_action_id"]
+    assert "proposed_action_id" not in required
     assert form["required_behavior"]["post_payment_questions"] is False
     assert form["failure_policy"]["after_payment"] == "withhold_invalid_output_and_refund"

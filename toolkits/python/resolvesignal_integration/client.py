@@ -26,6 +26,7 @@ RUNTIME_FIELDS = frozenset(
     {"current_state", "observations", "facts", "previous_attempts", "observed_at"}
 )
 REQUEST_FIELDS = PROFILE_FIELDS | RUNTIME_FIELDS
+OPTIONAL_RUNTIME_FIELDS = frozenset({"proposed_action_id"})
 NETWORK = "eip155:5042"
 USDC = "0x3600000000000000000000000000000000000000"
 ADDRESS = re.compile(r"^0x[0-9a-fA-F]{40}$")
@@ -61,10 +62,11 @@ def _load_schema(name: str) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def _exact_fields(value: dict[str, Any], expected: frozenset[str], code: str) -> None:
-    if not isinstance(value, dict) or set(value) != expected:
+def _exact_fields(value: dict[str, Any], expected: frozenset[str], code: str,
+                  optional: frozenset[str] = frozenset()) -> None:
+    if not isinstance(value, dict) or not expected <= set(value) or set(value) - expected - optional:
         missing = sorted(expected - set(value)) if isinstance(value, dict) else sorted(expected)
-        extra = sorted(set(value) - expected) if isinstance(value, dict) else []
+        extra = sorted(set(value) - expected - optional) if isinstance(value, dict) else []
         raise IntegrationError(code, f"missing={missing}; extra={extra}")
 
 
@@ -72,7 +74,7 @@ def build_request(profile: dict[str, Any], runtime: dict[str, Any]) -> dict[str,
     """Merge immutable integration policy with current runtime evidence."""
 
     _exact_fields(profile, PROFILE_FIELDS, "profile_fields_invalid")
-    _exact_fields(runtime, RUNTIME_FIELDS, "runtime_fields_invalid")
+    _exact_fields(runtime, RUNTIME_FIELDS, "runtime_fields_invalid", OPTIONAL_RUNTIME_FIELDS)
     request = {**profile, **runtime}
     validate_request(request)
     return request
@@ -81,7 +83,7 @@ def build_request(profile: dict[str, Any], runtime: dict[str, Any]) -> dict[str,
 def validate_request(request: dict[str, Any], schema: dict[str, Any] | None = None) -> None:
     """Validate locally. The live payer challenge remains the authoritative gate."""
 
-    _exact_fields(request, REQUEST_FIELDS, "request_fields_invalid")
+    _exact_fields(request, REQUEST_FIELDS, "request_fields_invalid", OPTIONAL_RUNTIME_FIELDS)
     validator = Draft202012Validator(
         schema or _load_schema("request-schema.json"), format_checker=FormatChecker()
     )
@@ -92,6 +94,11 @@ def validate_request(request: dict[str, Any], schema: dict[str, Any] | None = No
         raise IntegrationError("request_schema_invalid", f"{path}: {error.message}")
     if _contains_blank(request):
         raise IntegrationError("request_blank_value")
+    proposal = request.get("proposed_action_id")
+    actions = request.get("capabilities")
+    action_ids = {action["id"] for action in actions} if isinstance(actions, list) else set()
+    if proposal is not None and proposal not in action_ids:
+        raise IntegrationError("proposed_action_reference_invalid")
     _observed_timestamp(request.get("observed_at"))
 
 

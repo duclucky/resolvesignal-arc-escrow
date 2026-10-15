@@ -15,6 +15,20 @@ def render_result(decision, *, call_id: str, profile: dict):
             "goal_resolution_if_verified": "proven" if resolved else "not_proven",
             "next": "stop" if resolved else "blocked",
         })
+    proposal_review = {}
+    if request.proposed_action_id is not None:
+        proposal_review["proposal_review"] = {
+            "status": "retain" if request.proposed_action_id == action.id else "replace",
+            "proposed_action_id": request.proposed_action_id,
+            "selected_action_id": action.id,
+            "proposed_action_admissible": request.proposed_action_id in decision.contract.candidate_ids,
+            "basis": "independent_validated_selection",
+            "execution_authorized": False,
+            "limitations": (
+                "Agreement with a separately selected conditional action, not proof of optimality "
+                "or real-world success. A replacement does not by itself establish that the proposal was unsafe."
+            ),
+        }
     return {
         "call_id": call_id,
         "input_sha256": decision.contract.input_sha256,
@@ -25,6 +39,7 @@ def render_result(decision, *, call_id: str, profile: dict):
             "real_world_goal_state": "not_observed",
         },
         "decision": {
+            **proposal_review,
             "action_id": action.id,
             "parameters": {argument.name: argument.value for argument in action.arguments} if isinstance(action.arguments, list) else {},
             "target_id": action.target_id,

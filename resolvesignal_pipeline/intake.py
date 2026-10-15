@@ -21,7 +21,10 @@ class NormalizedRequest:
 
 def normalize_request(payload: dict) -> NormalizedRequest:
     request = Request.model_validate(payload)
-    serialized = canonical(request.model_dump(mode="json"))
+    value = request.model_dump(mode="json")
+    if request.proposed_action_id is None:
+        value.pop("proposed_action_id")
+    serialized = canonical(value)
     return NormalizedRequest(
         request=request,
         canonical_json=serialized,

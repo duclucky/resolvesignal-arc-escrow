@@ -173,6 +173,13 @@ class Request(StrictModel):
     previous_attempts: Answer
     observed_at: datetime
     locale: Literal["vi", "en"]
+    proposed_action_id: Identifier | None = Field(
+        default=None,
+        description="Optional declared capability ID. Hidden from model inputs; compared after independent validation. Arguments come from that capability.",
+    )
+
+    def model_input(self):
+        return self.model_dump(mode="json", exclude={"proposed_action_id"})
 
     @model_validator(mode="after")
     def bindings(self):
@@ -182,6 +189,8 @@ class Request(StrictModel):
             raise ValueError("current_state must provide an observable state")
         actions = self.capabilities if isinstance(self.capabilities, list) else []
         action_ids = {action.id for action in actions}
+        if self.proposed_action_id is not None and self.proposed_action_id not in action_ids:
+            raise ValueError("proposed action must reference a declared capability")
         observations = {observation.id for observation in self.observations}
         facts = {fact.id for fact in self.facts} if isinstance(self.facts, list) else set()
         if len(action_ids) != len(actions) or len(observations) != len(self.observations):

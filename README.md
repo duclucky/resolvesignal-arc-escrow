@@ -30,6 +30,31 @@ this checkout is not its complete production deployment. The reference demonstra
 The repository does not include credentials, customer payloads, production
 databases, signer material, internal hostnames, or private infrastructure state.
 
+## Review an intended action in one call
+
+Add optional `proposed_action_id` to a complete request to reference an existing
+capability and its fixed arguments. Jev admission, planning and semantic checking
+receive the ordinary evidence and constraints without this proposal field.
+After independent selection passes all checks, trusted code returns
+`decision.proposal_review` with `retain` or `replace`, the proposed and selected
+IDs, structural admissibility and scope limitations.
+
+For example, a caller proposes `retry_order` while declaring both `retry_order`
+and `check_status`. ResolveSignal may select `check_status` and return `replace`
+with its validated reasoning and fixed parameters. Agreement does not authorize
+execution or prove optimality; replacement alone does not establish that a
+proposal was unsafe. No valid result means the existing rejection/refund path.
+
+The hosted service uses the same x402 exact call and configured 0.06 USDC fee on
+Arc Mainnet. This adds no conversation or model invocation. Existing requests
+omit the field or use null. Changing a proposal changes the request commitment
+and requires a new idempotency key.
+
+- [Feature contract and limitations](docs/proposal-review.md)
+- [Live product introduction](https://resolvesignal.com/about#about-proposal)
+- [Integration guide](https://resolvesignal.com/integration/developer#proposal-review)
+- [Python client 0.1.2](toolkits/python)
+
 ## Why this is more than an LLM wrapper
 
 Jev and GPT-5.4 have different bounded roles. They do not vote on arbitrary

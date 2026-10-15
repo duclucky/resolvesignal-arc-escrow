@@ -1,18 +1,18 @@
 {
   "files_sha256": {
     "LICENSE": "e58ac8b6064d58441b55946d6e7c81205da9e8ca7526d8440d0010b2b7bea287",
-    "README.md": "89b0d7b69424a509ded5b3626cff795625d733ae75a83196e2734975088068b6",
+    "README.md": "71f846a769f566e6d59c524aae6b0b948d2e70cb5b3ab0c82ee41ecfe81e51ff",
     "examples/profile.json": "420988da121fc66cfafa99748ea816af5e5d44f757049283e3f324b8d0283818",
     "examples/runtime.json": "d3ef258be55fa217a8337a469816ec606536e24fd4f225f1df2d813020bd95de",
-    "pyproject.toml": "4fd275637e9cc8e39056a00da122db86fadca46a9e0be2a587642eaa5348ae16",
-    "resolvesignal_integration/__init__.py": "2bb63c235c391ccd53572a1d1db1d356934820a1120ceff5b9b195aeb932ce38",
+    "pyproject.toml": "ef997ce2770bc02fa5357be605ef99c42fe8af694ac1bb0d4c14da069f467410",
+    "resolvesignal_integration/__init__.py": "c623fd005e05bf49312ad83fd98cf0bfc6911e6c8c8fa9668f9472439c442f06",
     "resolvesignal_integration/__main__.py": "935a1c1166b0c1ea35a82256345000bf2c73ded718d77773bc27a71ecce28f7d",
     "resolvesignal_integration/cli.py": "71436cfe01f21944090ee5358b5b2a193d6c82bc0e75939fcbe82b633139c8ce",
-    "resolvesignal_integration/client.py": "867720ee7cde6ff7a5ae6d129329d7397555313c08ed73cc4b9890978b1e15dd",
-    "resolvesignal_integration/schemas/request-schema.json": "4a7fbd2e16312edef17448e2482f4d7a589ec161e85641b0c29ca3f3a0ff623f"
+    "resolvesignal_integration/client.py": "00f9f376d07e05933e247608ed896e3cbeedd65b4443f8ab645ec4c36245579d",
+    "resolvesignal_integration/schemas/request-schema.json": "26629573b4800aef9ddcb37c47caf32a00c6466521b2ca2c691bbf4eee455e04"
   },
   "package": "resolvesignal-integration",
   "repository": "https://github.com/duclucky/resolvesignal-decision-pipeline",
   "source_path": "toolkits/python",
-  "version": "0.1.1"
+  "version": "0.1.2"
 }

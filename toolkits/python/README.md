@@ -13,6 +13,15 @@ and uses the onchain refund path when a paid processing failure qualifies.
 
 ## Choose an integration surface
 
+Optional proposal review: put `proposed_action_id` in runtime evidence to name a
+declared capability with its fixed arguments. Check `/v2/form` for server support
+first. The field is hidden from admission, planning and checking; trusted code
+compares the validated selection and returns `decision.proposal_review` with
+`retain` or `replace`. This does not authorize execution, prove optimality, or
+establish that a replaced proposal was unsafe. An invalid reference is rejected
+before payment. Ordinary requests omit the field or use null. A changed proposal
+requires a new request/idempotency key. Fee and refund rules are unchanged.
+
 - **Python:** use the reference package and Circle CLI payment adapter.
 - **Any other language:** use the published JSON schemas and the HTTP/x402 flow.
 - **Coding Agent:** give it the dedicated integration prompt. The prompt tells it

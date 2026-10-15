@@ -592,6 +592,20 @@
       ],
       "title": "Locale",
       "type": "string"
+    },
+    "proposed_action_id": {
+      "anyOf": [
+        {
+          "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "Optional capability ID proposed by the caller. Its fixed arguments come from capabilities. Hidden from admission, planning and semantic checking; compared only after validation. Omit or use null for ordinary selection.",
+      "title": "Proposed Action Id"
     }
   },
   "required": [

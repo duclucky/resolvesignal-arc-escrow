@@ -5,10 +5,11 @@ from .contracts import Request
 
 def form_document() -> dict:
     return {
-        "schema_version": "1.0",
+        "schema_version": "1.1",
         "request_schema": Request.model_json_schema(),
         "required_behavior": {
-            "all_fields_required": True,
+            "all_fields_required": False,
+            "optional_fields": ["proposed_action_id"],
             "blank_values_allowed": False,
             "explicit_absence": "Use status none/unknown with a non-blank explanation.",
             "post_payment_questions": False,
